@@ -1,29 +1,36 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use anyhow::Error;
+
 use arrow::array::RecordBatch;
-use datafusion::{datasource::MemTable, error::DataFusionError, prelude::SessionContext};
+use datafusion::{dataframe::DataFrame, datasource::MemTable, error::DataFusionError, logical_expr::Expr, prelude::SessionContext};
 
 use crate::definition::{ExpressionType, Transformation};
 
-async fn execute(batches:Vec<RecordBatch>, transformation_plan:Transformation) -> Result<Vec<RecordBatch>,Error>{
+async fn execute(batches:Vec<RecordBatch>, transformation_plan:Transformation) -> Result<Vec<RecordBatch>,DataFusionError>{
     let dataset_schema = batches.first().unwrap().schema();
     let table = MemTable::try_new(dataset_schema, vec![batches])?;
     let ctx = SessionContext::new();
     ctx.register_table("obs_table", Arc::new(table))?;
     let table = ctx.table("obs_table").await?;
-    //TODO: FINISH IMPLEMENTATION
-    // let aggregated_expressions = &transformation_plan.aggregated_expressions();
-    // let projection_expressions = &transformation_plan.projection_expressions();
-    // if aggregated_expressions.len() > 0 {
-    //     let table = table.aggregate(aggregated_expressions.get(&ExpressionType::GROUP).unwrap().clone(), aggregated_expressions.get(&ExpressionType::AGGREGATE).unwrap().clone())?;
-    // }
-
-    // if projection_expressions.len() > 0 {
-    //     let table = table.select(projection_expressions.clone());
-    // }
+    let aggregated_expressions = transformation_plan.aggregated_expressions();
+    let table = step(aggregated_expressions, table).await?;
     
-    Err(anyhow::Error::msg("message"))
+    table.collect().await
+}
+
+async fn step(expressions: HashMap<ExpressionType,Vec<Expr>>, mut dataframe:DataFrame) -> Result<DataFrame,DataFusionError>{
+    for (expr_type, expression_vec) in &expressions{
+        match expr_type {
+            ExpressionType::SELECT => {
+                dataframe = dataframe.select(expression_vec.clone())?;
+            },
+            ExpressionType::AGGREGATE =>{
+                dataframe = dataframe.aggregate(expressions.get(&ExpressionType::GROUP).unwrap().clone(), expressions.get(&ExpressionType::AGGREGATE).unwrap().clone())?;
+            },
+            _ => todo!()
+        }
+    }
+    Ok(dataframe)
 }
 
 #[cfg(test)]
@@ -31,6 +38,8 @@ mod test{
     use std::sync::Arc;
 
     use arrow::{array::{Float32Array, Int32Array, RecordBatch, StringArray}, datatypes::{DataType, Field, Schema}};
+
+    use crate::definition::TransformationBuilder;
 
     use super::execute;
 
@@ -45,6 +54,13 @@ mod test{
             Field::new("value", DataType::Float32, true),
             ]));
         let record_batch = RecordBatch::try_new(schem.clone(), vec![col_id,col_category,col_value]);
-        // execute(vec![record_batch.unwrap()]);
+        let builder = TransformationBuilder::new();
+        let transform = builder
+        .select(vec!["id","value","category"])
+        .count(vec!["value"])
+        .group_by(vec!["category"])
+        .build();
+
+        execute(vec![record_batch.unwrap()],transform);
     }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use datafusion::{functions_aggregate::sum::sum, logical_expr::{avg, col, count, max, min, Expr}};
 
 #[derive(Debug)]
-struct TransformationBuilder{
+pub struct TransformationBuilder{
     select:Vec<Expr>,
     group_by:Vec<Expr>,
     sum:Vec<Expr>,
@@ -14,7 +14,7 @@ struct TransformationBuilder{
 }
 
 impl TransformationBuilder {
-    fn new() -> Self{
+    pub fn new() -> Self{
         Self { 
             select: Vec::new(), 
             group_by: Vec::new(), 
@@ -25,27 +25,27 @@ impl TransformationBuilder {
             count: Vec::new() }
     }
 
-    fn select(mut self,columns:Vec<&str>) -> Self{
+    pub fn select(mut self,columns:Vec<&str>) -> Self{
         self.select = columns.iter().map(|c| col(c.to_string())).collect();
         self
     }
 
-    fn group_by(mut self,columns:Vec<&str>) -> Self{
+    pub fn group_by(mut self,columns:Vec<&str>) -> Self{
         self.group_by = columns.iter().map(|c| col(c.to_string())).collect();
         self
     }
 
-    fn sum(mut self, columns:Vec<&str>) -> Self{
+    pub fn sum(mut self, columns:Vec<&str>) -> Self{
         self.sum = columns.iter().map(|c|sum(col(c.to_string()))).collect();
         self
     }
     
-    fn avg(mut self, columns:Vec<&str>) -> Self{
+    pub fn avg(mut self, columns:Vec<&str>) -> Self{
         self.avg = columns.iter().map(|c|avg(col(c.to_string()))).collect();
         self
     }
 
-    fn min(mut self, columns:Vec<&str>) -> Self{
+    pub fn min(mut self, columns:Vec<&str>) -> Self{
         self.min = columns.iter().map(|c|min(col(c.to_string()))).collect();
         self
     }
@@ -55,12 +55,12 @@ impl TransformationBuilder {
         self
     }
 
-    fn count(mut self, columns:Vec<&str>) -> Self{
+    pub fn count(mut self, columns:Vec<&str>) -> Self{
         self.count = columns.iter().map(|c|count(col(c.to_string()))).collect();
         self
     }
 
-    fn build(&self) -> Transformation{
+    pub fn build(&self) -> Transformation{
         //TODO: Handle ERRORS
         let agg_op_vec = vec![self.avg.clone(),self.sum.clone(),self.min.clone(),self.max.clone(),self.count.clone()].concat();
         
