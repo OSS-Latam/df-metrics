@@ -1,89 +1,62 @@
-use std::collections::HashMap;
 
-use datafusion::{functions_aggregate::sum::sum, logical_expr::{avg, col, count, max, min, Expr}};
+
+// Define the Instruction enum
+#[derive(Debug, Clone,PartialEq)]
+pub enum Instruction {
+    Select(Vec<String>),
+    GroupBy(Vec<String>),
+    Aggregate(AggregateType, Vec<String>),
+}
+
+#[derive(Debug, Clone,PartialEq)]
+pub enum AggregateType {
+    Sum,
+    Avg,
+    Min,
+    Max,
+    Count,
+}
+
 
 #[derive(Debug)]
-pub struct TransformationBuilder{
-    select:Vec<Expr>,
-    group_by:Vec<Expr>,
-    sum:Vec<Expr>,
-    avg:Vec<Expr>,
-    min:Vec<Expr>,
-    max:Vec<Expr>,
-    count:Vec<Expr>
+pub struct TransformationBuilder {
+    instructions: Vec<Instruction>,
 }
 
 impl TransformationBuilder {
-    pub fn new() -> Self{
-        Self { 
-            select: Vec::new(), 
-            group_by: Vec::new(), 
-            sum: Vec::new(), 
-            avg: Vec::new(), 
-            min: Vec::new(), 
-            max: Vec::new(), 
-            count: Vec::new() }
-    }
-
-    pub fn select(mut self,columns:Vec<&str>) -> Self{
-        self.select = columns.iter().map(|c| col(c.to_string())).collect();
-        self
-    }
-
-    pub fn group_by(mut self,columns:Vec<&str>) -> Self{
-        self.group_by = columns.iter().map(|c| col(c.to_string())).collect();
-        self
-    }
-
-    pub fn sum(mut self, columns:Vec<&str>) -> Self{
-        self.sum = columns.iter().map(|c|sum(col(c.to_string()))).collect();
-        self
-    }
-    
-    pub fn avg(mut self, columns:Vec<&str>) -> Self{
-        self.avg = columns.iter().map(|c|avg(col(c.to_string()))).collect();
-        self
-    }
-
-    pub fn min(mut self, columns:Vec<&str>) -> Self{
-        self.min = columns.iter().map(|c|min(col(c.to_string()))).collect();
-        self
-    }
-
-    fn max(mut self, columns:Vec<&str>) -> Self{
-        self.max = columns.iter().map(|c|max(col(c.to_string()))).collect();
-        self
-    }
-
-    pub fn count(mut self, columns:Vec<&str>) -> Self{
-        self.count = columns.iter().map(|c|count(col(c.to_string()))).collect();
-        self
-    }
-
-    pub fn build(&self) -> Transformation{
-        //TODO: Handle ERRORS
-        let agg_op_vec = vec![self.avg.clone(),self.sum.clone(),self.min.clone(),self.max.clone(),self.count.clone()].concat();
-        
-        let mut expression_map = HashMap::<ExpressionType,Vec<Expr>>::new();
-        if self.select.len() > 0{
-            expression_map.insert(ExpressionType::SELECT, self.select.clone());
+    pub fn new() -> Self {
+        Self {
+            instructions: Vec::new(),
         }
+    }
 
-        // If there are not aggregated operation but there are groups then return error
-        if self.group_by.len() > 0{
-            expression_map.insert(ExpressionType::GROUP, self.group_by.clone());
-        }
+    pub fn select(mut self, columns: Vec<&str>) -> Self {
+        self.instructions.push(Instruction::Select(columns.iter().map(|&c| c.to_string()).collect()));
+        self
+    }
 
-        if agg_op_vec.len() > 0{
-            expression_map.insert(ExpressionType::AGGREGATE, agg_op_vec);
-        }
+    pub fn group_by(mut self, columns: Vec<&str>) -> Self {
+        self.instructions.push(Instruction::GroupBy(columns.iter().map(|&c| c.to_string()).collect()));
+        self
+    }
 
+    pub fn aggregate(mut self, agg_type: AggregateType, columns: Vec<&str>) -> Self {
+        self.instructions.push(Instruction::Aggregate(agg_type, columns.iter().map(|&c| c.to_string()).collect()));
+        self
+    }
+
+    pub fn build(self) -> Transformation {
         Transformation {
-            aggregated_expressions: expression_map,
-            projection_expressions: self.select.clone()
+            instructions: self.instructions,
         }
-        
     }
+}
+
+
+// Define the Transformation struct to hold the list of Instructions
+#[derive(Debug,PartialEq)]
+pub struct Transformation {
+    pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug,PartialEq,Hash,Eq)]
@@ -93,38 +66,21 @@ pub enum ExpressionType{
     AGGREGATE
 }
 
-#[derive(Debug,PartialEq)]
-pub struct Transformation{
-    aggregated_expressions: HashMap<ExpressionType,Vec<Expr>>,
-    projection_expressions: Vec<Expr>
-}
-
-
-impl Transformation {
-    pub fn aggregated_expressions(self) -> HashMap<ExpressionType, Vec<Expr>>{
-        self.aggregated_expressions
-    }
-
-    pub fn projection_expressions(self) -> Vec<Expr>{
-        self.projection_expressions
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use datafusion::logical_expr::{col, count};
 
-    use super::TransformationBuilder;
+    use super::{AggregateType, Instruction, TransformationBuilder};
 
     #[test]
     fn test_build_transformation(){
         let builder = TransformationBuilder::new();
         let transform = builder
         .select(vec!["id","value","category"])
-        .count(vec!["value"])
+        .aggregate(AggregateType::Count,vec!["value"])
         .group_by(vec!["category"])
         .build();
-        let expected_aggs = vec![count(col("value"))];
-        assert_eq!(transform.aggregated_expressions().get(&super::ExpressionType::AGGREGATE).unwrap(),&expected_aggs)
+        let expected_instruction = Instruction::Select(vec!["".to_string(),"".to_string(),"".to_string()]);
+
+        assert_eq!(transform.instructions.contains(&expected_instruction),true)
     }
 }
