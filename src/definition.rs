@@ -1,14 +1,12 @@
-
-
-// Define the Instruction enum
-#[derive(Debug, Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     Select(Vec<String>),
     GroupBy(Vec<String>),
     Aggregate(AggregateType, Vec<String>),
+    Filter(String),
 }
 
-#[derive(Debug, Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum AggregateType {
     Sum,
     Avg,
@@ -16,7 +14,6 @@ pub enum AggregateType {
     Max,
     Count,
 }
-
 
 #[derive(Debug)]
 pub struct TransformationBuilder {
@@ -31,17 +28,30 @@ impl TransformationBuilder {
     }
 
     pub fn select(mut self, columns: Vec<&str>) -> Self {
-        self.instructions.push(Instruction::Select(columns.iter().map(|&c| c.to_string()).collect()));
+        self.instructions.push(Instruction::Select(
+            columns.iter().map(|&c| c.to_string()).collect(),
+        ));
         self
     }
 
     pub fn group_by(mut self, columns: Vec<&str>) -> Self {
-        self.instructions.push(Instruction::GroupBy(columns.iter().map(|&c| c.to_string()).collect()));
+        self.instructions.push(Instruction::GroupBy(
+            columns.iter().map(|&c| c.to_string()).collect(),
+        ));
         self
     }
 
     pub fn aggregate(mut self, agg_type: AggregateType, columns: Vec<&str>) -> Self {
-        self.instructions.push(Instruction::Aggregate(agg_type, columns.iter().map(|&c| c.to_string()).collect()));
+        self.instructions.push(Instruction::Aggregate(
+            agg_type,
+            columns.iter().map(|&c| c.to_string()).collect(),
+        ));
+        self
+    }
+
+    pub fn filter(mut self, condition: &str) -> Self {
+        self.instructions
+            .push(Instruction::Filter(condition.to_string()));
         self
     }
 
@@ -52,18 +62,17 @@ impl TransformationBuilder {
     }
 }
 
-
 // Define the Transformation struct to hold the list of Instructions
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Transformation {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug,PartialEq,Hash,Eq)]
-pub enum ExpressionType{
+#[derive(Debug, PartialEq, Hash, Eq)]
+pub enum ExpressionType {
     SELECT,
     GROUP,
-    AGGREGATE
+    AGGREGATE,
 }
 
 #[cfg(test)]
@@ -72,15 +81,19 @@ mod tests {
     use super::{AggregateType, Instruction, TransformationBuilder};
 
     #[test]
-    fn test_build_transformation(){
+    fn test_build_transformation() {
         let builder = TransformationBuilder::new();
         let transform = builder
-        .select(vec!["id","value","category"])
-        .aggregate(AggregateType::Count,vec!["value"])
-        .group_by(vec!["category"])
-        .build();
-        let expected_instruction = Instruction::Select(vec!["".to_string(),"".to_string(),"".to_string()]);
+            .select(vec!["id", "value", "category"])
+            .aggregate(AggregateType::Count, vec!["value"])
+            .group_by(vec!["category"])
+            .build();
+        let expected_instruction = Instruction::Select(vec![
+            "id".to_string(),
+            "value".to_string(),
+            "category".to_string(),
+        ]);
 
-        assert_eq!(transform.instructions.contains(&expected_instruction),true)
+        assert_eq!(transform.instructions.contains(&expected_instruction), true)
     }
 }

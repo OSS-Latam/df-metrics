@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 arrow = "52.1.0"
-datafusion = "39.0.0"
+datafusion = "41.0.0"
 tokio = "1.38.0"
