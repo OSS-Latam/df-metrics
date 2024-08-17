@@ -13,8 +13,7 @@ pub fn generate_dataset() -> Result<RecordBatch, ArrowError> {
         Field::new("category", DataType::Utf8, false),
         Field::new("value", DataType::Float32, true),
     ]));
-    let record_batch = RecordBatch::try_new(schem.clone(), vec![col_id, col_category, col_value]);
-    record_batch
+    RecordBatch::try_new(schem.clone(), vec![col_id, col_category, col_value])
 }
 
 pub fn assert_record_batches_equal(

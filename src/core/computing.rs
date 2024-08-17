@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
+use crate::core::definition::Transformation;
+use crate::core::parser::parse;
 use arrow::array::RecordBatch;
 use datafusion::{datasource::MemTable, error::DataFusionError, prelude::SessionContext};
 
-use crate::definition::Transformation;
-use crate::parser::parse;
-
-async fn execute(
+pub async fn execute(
     batches: Vec<RecordBatch>,
-    transformations: Transformation,
+    transformations: &Transformation,
 ) -> Result<Vec<RecordBatch>, DataFusionError> {
     let dataset_schema = batches.first().unwrap().schema();
     let table = MemTable::try_new(dataset_schema, vec![batches])?;
@@ -24,14 +23,13 @@ async fn execute(
 mod test {
     use std::sync::Arc;
 
+    use crate::core::definition::{AggregateType, TransformationBuilder};
+    use crate::test::{assert_record_batches_equal, generate_dataset};
     use arrow::array::Int64Array;
     use arrow::{
         array::{RecordBatch, StringArray},
         datatypes::{DataType, Field, Schema},
     };
-
-    use crate::definition::{AggregateType, TransformationBuilder};
-    use crate::test::{assert_record_batches_equal, generate_dataset};
 
     use super::execute;
 
@@ -44,7 +42,7 @@ mod test {
             .aggregate(AggregateType::Count, vec!["value"])
             .group_by(vec!["category"])
             .build();
-        let result = execute(vec![record_batch.unwrap()], transform)
+        let result = execute(vec![record_batch.unwrap()], &transform)
             .await
             .unwrap();
 
@@ -64,7 +62,7 @@ mod test {
             .aggregate(AggregateType::Count, vec!["value"])
             .group_by(vec!["category"])
             .build();
-        let result = execute(vec![record_batch.unwrap()], transform)
+        let result = execute(vec![record_batch.unwrap()], &transform)
             .await
             .unwrap();
         let result = result.into_iter().filter(|r| r.num_rows() > 0).collect();

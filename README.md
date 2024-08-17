@@ -1,6 +1,6 @@
 # df-metrics
 
-`df-metrics` is a Rust library for generating operational metrics from in-memory datasets using Apache Arrow. It provides a flexible and efficient way to manipulate and analyze data.
+`df-metrics` is a Rust library for generating operational metrics of analytical workloads from in-memory datasets using Apache Arrow and Datafusion. It provides a flexible and efficient way to manipulate and generate metrics.
 
 ## Features
 
@@ -13,7 +13,9 @@
 
 Here's a basic example of how to use df-metrics:
 ```rust
-use df_metrics::{TransformationBuilder, AggregateType};
+use crate::core::definition::AggregateType;
+use crate::metrics::MetricsManager;
+use crate::storage::StorageBackend;
 use arrow::array::{Int32Array, StringArray, Float32Array, RecordBatch};
 use arrow::datatypes::{DataType, Field, Schema};
 use std::sync::Arc;
@@ -29,18 +31,17 @@ fn main() {
     ]));
     let record_batch = RecordBatch::try_new(schema.clone(), vec![col_id, col_category, col_value]).unwrap();
 
-    let builder = TransformationBuilder::new();
-    let transform = builder
-        .select(vec!["id", "value", "category"])
-        .filter("value > 5")
-        .aggregate(AggregateType::Count, vec!["value"])
-        .group_by(vec!["category"])
-        .build();
-
-    let result = execute(vec![record_batch], transform).await.unwrap();
-    result.iter().for_each(|batch| {
-        println!("{:?}", batch);
-    });
+    MetricsManager::default()
+        .transform(
+            TransformationBuilder::new()
+                .select(vec!["id", "value", "category"])
+                .aggregate(AggregateType::Sum, vec!["value"])
+                .group_by(vec!["category"])
+                .build(),
+        )
+        .execute(vec![record_batch.unwrap()])
+        .publish(StorageBackend::Stdout)
+        .await
 }
 ```
 
