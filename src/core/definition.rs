@@ -63,16 +63,9 @@ impl TransformationBuilder {
 }
 
 // Define the Transformation struct to hold the list of Instructions
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Transformation {
     pub instructions: Vec<Instruction>,
-}
-
-#[derive(Debug, PartialEq, Hash, Eq)]
-pub enum ExpressionType {
-    SELECT,
-    GROUP,
-    AGGREGATE,
 }
 
 #[cfg(test)]

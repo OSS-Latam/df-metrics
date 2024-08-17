@@ -1,4 +1,4 @@
-use crate::definition::{AggregateType, Instruction};
+use crate::core::definition::{AggregateType, Instruction};
 use datafusion::common::DataFusionError;
 use datafusion::dataframe::DataFrame;
 use datafusion::functions_aggregate::expr_fn::{avg, count, max, min, sum};
