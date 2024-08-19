@@ -11,16 +11,16 @@
 
 ## Usage
 
-Here's a basic example of how to use df-metrics:
+Here's a basic example of how to use df-metrics library:
 ```rust
-use crate::core::definition::AggregateType;
+use crate::core::definition::{AggregateType,TransformationBuilder};
 use crate::metrics::MetricsManager;
 use crate::storage::StorageBackend;
 use arrow::array::{Int32Array, StringArray, Float32Array, RecordBatch};
 use arrow::datatypes::{DataType, Field, Schema};
 use std::sync::Arc;
 
-fn main() {
+async fn main() {
     let col_id = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
     let col_category = Arc::new(StringArray::from(vec!["a", "a", "b", "b", "c"]));
     let col_value = Arc::new(Float32Array::from(vec![2.0, 3.0, 5.0, 12.3, 9.5]));
@@ -42,7 +42,41 @@ fn main() {
         .execute(vec![record_batch.unwrap()])
         .publish(StorageBackend::Stdout)
         .await
+        .unwrap()
 }
+```
+
+This is another example using the built-in metrics
+
+```rust
+use crate::core::definition::BuiltInMetricsBuilder;
+use crate::metrics::MetricsManager;
+use crate::storage::StorageBackend;
+use arrow::array::{Int32Array, StringArray, Float32Array, RecordBatch};
+use arrow::datatypes::{DataType, Field, Schema};
+use std::sync::Arc;
+
+async fn main() {
+
+    let col_id = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
+    let col_category = Arc::new(StringArray::from(vec!["a", "a", "b", "b", "c"]));
+    let col_value = Arc::new(Float32Array::from(vec![Some(2.0), None, Some(5.0), Some(12.3), Some(9.5)]));
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("id", DataType::Int32, false),
+        Field::new("category", DataType::Utf8, false),
+        Field::new("value", DataType::Float32, true),
+    ]));
+    let record_batch = RecordBatch::try_new(schema.clone(), vec![col_id, col_category, col_value]).unwrap();
+    
+    MetricsManager::default()
+        .transform(BuiltInMetricsBuilder::new().count_null("value", None))
+        .execute(vec![record_batch.unwrap()])
+        .publish(StorageBackend::Stdout)
+        .await
+        .unwrap()
+}
+
+
 ```
 
 ## Contributing
