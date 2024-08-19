@@ -69,7 +69,7 @@ mod test {
 
         let expected_schema = Arc::new(Schema::new(vec![
             Field::new("category", DataType::Utf8, false),
-            Field::new("count(obs_table.value)", DataType::Int64, true),
+            Field::new("value", DataType::Int64, true),
         ]));
 
         let expected_result = vec![

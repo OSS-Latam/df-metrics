@@ -7,7 +7,13 @@ use std::sync::Arc;
 pub fn generate_dataset() -> Result<RecordBatch, ArrowError> {
     let col_id = Arc::new(Int32Array::from(vec![1, 2, 3, 4, 5]));
     let col_category = Arc::new(StringArray::from(vec!["a", "a", "b", "b", "c"]));
-    let col_value = Arc::new(Float32Array::from(vec![2.0, 3.0, 5.0, 12.3, 9.5]));
+    let col_value = Arc::new(Float32Array::from(vec![
+        Some(2.0),
+        None,
+        Some(5.0),
+        Some(12.3),
+        Some(9.5),
+    ]));
     let schem = Arc::new(Schema::new(vec![
         Field::new("id", DataType::Int32, false),
         Field::new("category", DataType::Utf8, false),

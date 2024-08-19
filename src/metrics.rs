@@ -49,7 +49,7 @@ impl MetricsManager {
 
 #[cfg(test)]
 mod test {
-    use crate::core::definition::{AggregateType, TransformationBuilder};
+    use crate::core::definition::{AggregateType, BuiltInMetricsBuilder, TransformationBuilder};
     use crate::metrics::MetricsManager;
     use crate::storage::StorageBackend;
     use crate::test::generate_dataset;
@@ -65,6 +65,17 @@ mod test {
                     .group_by(vec!["category"])
                     .build(),
             )
+            .execute(vec![record_batch.unwrap()])
+            .publish(StorageBackend::Stdout)
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_count_null_metrics() {
+        let record_batch = generate_dataset();
+        MetricsManager::default()
+            .transform(BuiltInMetricsBuilder::new().count_null("value", None))
             .execute(vec![record_batch.unwrap()])
             .publish(StorageBackend::Stdout)
             .await
