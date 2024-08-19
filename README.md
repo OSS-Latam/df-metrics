@@ -83,6 +83,13 @@ async fn main() {
 
 Contributions are welcome! Please open an issue or submit a pull request.
 
+You can find a [good-first-issue](https://github.com/OSS-Latam/df-metrics/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) list to help you get started.
+
+### Setup
+* Ensure you have Rust installed. The recommended version is 1.80.0 or later.
+* Clone the repository to your local machine using `git clone https://github.com/OSS-Latam/df-metrics.git`
+* Build the project using Cargo by running `cargo build`
+
 ### Submitting your work
 Please consider the following guidelines before submitting a PR
 * Make sure all test are correctly executing and passing by running `cargo test`
