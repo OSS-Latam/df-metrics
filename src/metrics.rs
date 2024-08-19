@@ -5,6 +5,16 @@ use crate::core::definition::Transformation;
 use crate::storage::StorageBackend;
 use crate::MetricError;
 
+/// `MetricsManager` is responsible for managing and executing transformations on data record batches.
+/// # Examples
+/// ```ignore
+/// MetricsManager::default()
+///             .transform(BuiltInMetricsBuilder::new().count_null("value", None))
+///             .execute(vec![record_batch.unwrap()])
+///             .publish(StorageBackend::Stdout)
+///             .await
+///             .unwrap()
+/// ```
 #[derive(Debug, Default)]
 struct MetricsManager {
     transformation: Transformation,
@@ -27,6 +37,19 @@ impl MetricsManager {
         self
     }
 
+    /// Execution the instructions and publishes the results of the transformation to the specified storage backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `storage_backend` - The `StorageBackend` where the results will be published.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the specified storage backend is not supported.
     pub async fn publish(&self, storage_backend: StorageBackend) -> Result<(), MetricError> {
         let result = execute(self.batches.clone(), &self.transformation)
             .await

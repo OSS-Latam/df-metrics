@@ -23,6 +23,20 @@ pub enum AggregateType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExprValue(pub String, pub Expr);
 
+
+/// `TransformationBuilder` is a builder for creating custom data transformations.
+///
+/// This builder provides methods to add various transformation instructions such as select, group by, aggregate, and filter.
+///
+/// # Examples
+///
+/// ```ignore
+/// let transformation = TransformationBuilder::new()
+///     .select(vec!["id", "value", "category"])
+///     .aggregate(AggregateType::Sum, vec!["value"])
+///     .group_by(vec!["category"])
+///     .build();
+/// ```
 #[derive(Debug)]
 pub struct TransformationBuilder {
     instructions: Vec<Instruction>,
@@ -78,6 +92,16 @@ impl TransformationBuilder {
     }
 }
 
+/// `BuiltInMetricsBuilder` is a builder for creating built-in metric transformations.
+///
+/// This builder provides methods to create common metric transformations such as counting null values.
+///
+/// # Examples
+///
+/// ```ignore
+/// let transformation = BuiltInMetricsBuilder::new()
+///     .count_null("value", None);
+/// ```
 #[derive(Debug)]
 pub struct BuiltInMetricsBuilder {
     instructions: Vec<Instruction>,
@@ -89,6 +113,17 @@ impl BuiltInMetricsBuilder {
             instructions: Vec::new(),
         }
     }
+
+    /// Adds a count null transformation for the specified column.
+    ///
+    /// # Arguments
+    ///
+    /// * `column` - The name of the column to count null values in.
+    /// * `tags` - Optional tags to include in the transformation.
+    ///
+    /// # Returns
+    ///
+    /// A `Transformation` object representing the count null transformation.
     pub fn count_null(&mut self, column: &str, tags: Option<Vec<&str>>) -> Transformation {
         self.instructions
             .push(Instruction::Select(vec![col(column)]));
@@ -105,6 +140,12 @@ impl BuiltInMetricsBuilder {
         }
     }
 
+    /// Completes the schema for the transformation by adding additional columns.
+    ///
+    /// # Arguments
+    ///
+    /// * `column_name` - The name of the column being transformed.
+    /// * `tags` - Optional tags to include in the transformation.
     fn completion_schema(&mut self, column_name: &str, tags: Option<Vec<&str>>) {
         self.instructions.push(Instruction::Literal(
             "metric_name".to_string(),
